@@ -1,11 +1,3 @@
-/*
- * Created by ArduinoGetStarted.com
- *
- * This example code is in the public domain
- *
- * Tutorial page: https://arduinogetstarted.com/tutorials/arduino-send-email
- */
-
 #include <SPI.h>
 #include <Ethernet.h>
 
@@ -17,10 +9,10 @@ EthernetClient client;
 int    HTTP_PORT   = 80;
 String HTTP_METHOD = "GET";
 char   HOST_NAME[] = "maker.ifttt.com";
-String PATH_NAME   = "/trigger/door_opened/with/key/kumJif1RkSz9cRaL33g20lYpLocuDZOJdNyauL1BL_h"; // change your EVENT-NAME and YOUR-KEY
-String queryString = "?value1=26&value2=70";
+String PATH_NAME   = "/trigger/door_opened/with/key/kumJif1RkSz9cRaL33g20lYpLocuDZOJdNyauL1BL_h";
 
-void setup() {
+void setup() 
+{
   Serial.begin(9600);
 
   // initialize the Ethernet shield using DHCP:
@@ -33,9 +25,24 @@ void setup() {
   if(client.connect(HOST_NAME, HTTP_PORT)) {
     // if connected:
     Serial.println("Connected to server");
+
+  } else {// if not connected:
+    Serial.println("connection failed");
+  }
+
+}
+
+void loop() 
+{
+
+}
+
+
+void sendEmail (void) 
+{
     // make a HTTP request:
     // send HTTP header
-    client.println("GET " + PATH_NAME + queryString + " HTTP/1.1");
+    client.println("GET " + PATH_NAME + " HTTP/1.1");
     client.println("Host: " + String(HOST_NAME));
     client.println("Connection: close");
     client.println(); // end HTTP header
@@ -47,16 +54,10 @@ void setup() {
         Serial.print(c);
       }
     }
-
-    // the server's disconnected, stop the client:
-    client.stop();
-    Serial.println();
-    Serial.println("disconnected");
-  } else {// if not connected:
-    Serial.println("connection failed");
-  }
 }
 
-void loop() {
-
+void disconnect(void)
+{
+    client.stop()
+    Serial.println("Disconnected");
 }
