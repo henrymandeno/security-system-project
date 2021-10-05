@@ -1,6 +1,8 @@
 #include <SPI.h>
 #include <Ethernet.h>
 
+#define BUZZER_PIN 8
+
 // replace the MAC address below by the MAC address printed on a sticker on the Arduino Shield 2
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
@@ -10,11 +12,30 @@ int    HTTP_PORT   = 80;
 String HTTP_METHOD = "GET";
 char   HOST_NAME[] = "maker.ifttt.com";
 String PATH_NAME   = "/trigger/door_opened/with/key/kumJif1RkSz9cRaL33g20lYpLocuDZOJdNyauL1BL_h";
+bool armed = false;
+bool door_opened = false;
 
 void setup() 
 {
   Serial.begin(9600);
+  initialiseEthernet();
+}
 
+void loop() 
+{
+    if (armed && door_opened) {
+      sendEmail();
+      alarmBuzzer();
+    }
+}
+
+
+
+
+
+//Initialise Ethernet Shield, connects to web server
+void initialiseEthernet(void)
+{
   // initialize the Ethernet shield using DHCP:
   if (Ethernet.begin(mac) == 0) {
     Serial.println("Failed to obtaining an IP address using DHCP");
@@ -29,16 +50,11 @@ void setup()
   } else {// if not connected:
     Serial.println("connection failed");
   }
-
-}
-
-void loop() 
-{
-
 }
 
 
-void sendEmail (void) 
+//Sends an email by triggering a webhook, also reads the incoming message from the server and prints to serial monitor
+void sendEmail(void) 
 {
     // make a HTTP request:
     // send HTTP header
@@ -56,8 +72,21 @@ void sendEmail (void)
     }
 }
 
+//Disconnects client from internet
 void disconnect(void)
 {
-    client.stop()
+    client.stop();
     Serial.println("Disconnected");
 }
+
+
+void alarmBuzzer(void)
+{
+  while (armed) {
+    tone(BUZZER_PIN, 1000, 500);
+    noTone(BUZZER_PIN);
+    tone(BUZZER_PIN, 1500, 500);
+    noTone(BUZZER_PIN);
+  }; 
+}
+
