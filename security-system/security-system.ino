@@ -2,6 +2,7 @@
 #include <Ethernet.h>
 
 #define BUZZER_PIN 8
+#define CAMERA_PIN 7
 
 // replace the MAC address below by the MAC address printed on a sticker on the Arduino Shield 2
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
@@ -14,6 +15,7 @@ char   HOST_NAME[] = "maker.ifttt.com";
 String PATH_NAME   = "/trigger/door_opened/with/key/kumJif1RkSz9cRaL33g20lYpLocuDZOJdNyauL1BL_h";
 bool armed = false;
 bool door_opened = false;
+bool turn_alarm_off = false;
 
 void setup() 
 {
@@ -23,10 +25,11 @@ void setup()
 
 void loop() 
 {
-    if (armed && door_opened) {
-      sendEmail();
-      alarmBuzzer();
-    }
+  if (armed && door_opened) {
+    sendEmail();
+    alarmBuzzer();
+    triggerCamera();
+  }
 }
 
 
@@ -82,11 +85,16 @@ void disconnect(void)
 
 void alarmBuzzer(void)
 {
-  while (armed) {
-    tone(BUZZER_PIN, 1000, 500);
-    noTone(BUZZER_PIN);
-    tone(BUZZER_PIN, 1500, 500);
-    noTone(BUZZER_PIN);
-  }; 
+  while (armed && !turn_alarm_off) {
+    digitalWrite(BUZZER_PIN, HIGH);
+    delay(500);
+    digitalWrite(BUZZER_PIN, LOW);
+    delay(500);
 }
 
+void triggerCamera(void)
+{
+  digitalWrite(CAMERA_PIN, HIGH);
+  delay(500);
+  digitalWrite(CAMERA_PIN, LOW);
+}
