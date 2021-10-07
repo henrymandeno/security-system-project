@@ -25,6 +25,8 @@ void setup()
 
 void loop() 
 {
+  armed = true;
+  door_opened = true;
   if (armed && door_opened) {
     sendEmail();
     alarmBuzzer();
