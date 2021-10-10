@@ -1,10 +1,18 @@
 #include <SPI.h>
 #include <Ethernet.h>
 
+#define DOOR_PIN 2
 #define BUZZER_PIN 8
-#define CAMERA_PIN 7
+#define CAMERA_PIN 10
+#define LED_COUNTER1 3
+#define LED_COUNTER2 4
+#define LED_COUNTER3 5
+#define LED_COUNTER4 6
+#define LED_DISARMED 7
+#define LED_ARMED 9
+#define PINPAD A0
 
-// replace the MAC address below by the MAC address printed on a sticker on the Arduino Shield 2
+//mac adddress
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
 EthernetClient client;
@@ -12,30 +20,62 @@ EthernetClient client;
 int    HTTP_PORT   = 80;
 String HTTP_METHOD = "GET";
 char   HOST_NAME[] = "maker.ifttt.com";
-String PATH_NAME   = "/trigger/door_opened/with/key/kumJif1RkSz9cRaL33g20lYpLocuDZOJdNyauL1BL_h";
+String PATH_NAME   = "/trigger/Door_opened/with/key/kumJif1RkSz9cRaL33g20lYpLocuDZOJdNyauL1BL_h";
 bool armed = false;
 bool door_opened = false;
-bool turn_alarm_off = false;
+bool runOnce = true;
+int button_signal;
+int button_value;
+int password_input[4];
+int password[4] = {1, 2, 3, 4};
+int count = 0;
 
 void setup() 
 {
   Serial.begin(9600);
-  initialiseEthernet();
+  pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(LED_COUNTER1, OUTPUT);
+  pinMode(LED_COUNTER2, OUTPUT);
+  pinMode(LED_COUNTER3, OUTPUT);
+  pinMode(LED_COUNTER4, OUTPUT);
+  pinMode(LED_DISARMED, OUTPUT);
+  pinMode(LED_ARMED, OUTPUT);
+  pinMode(PINPAD, INPUT_PULLUP);
+  attachInterrupt(DOOR_PIN, doorOpened, RISING);
 }
 
 void loop() 
 {
-  armed = true;
-  door_opened = true;
   if (armed && door_opened) {
-    sendEmail();
+    if (runOnce) {
+      initialiseEthernet();
+      sendEmail();
+      runOnce = false;
+      door_opened = false;
+    }
+//      triggerCamera();
     alarmBuzzer();
-    triggerCamera();
+  } else if (!armed) {
+    turnAlarmOff();
   }
+    
+  button_signal = analogRead(PINPAD);
+  button_value = buttonValue(button_signal);
+  if (button_value > 0) {
+    passwordInput(button_value);
+  }
+  ledIndication();
+  if (count == 4) {
+    if (arrayCompare(password, password_input)) {
+      armed = !armed;
+      if (armed) {
+        runOnce = true;
+      }
+    }
+    count = 0;
+  }
+  armedLedIndication();
 }
-
-
-
 
 
 //Initialise Ethernet Shield, connects to web server
@@ -87,11 +127,8 @@ void disconnect(void)
 
 void alarmBuzzer(void)
 {
-  while (armed && !turn_alarm_off) {
-    digitalWrite(BUZZER_PIN, HIGH);
-    delay(500);
-    digitalWrite(BUZZER_PIN, LOW);
-    delay(500);
+  digitalWrite(BUZZER_PIN, HIGH);
+  
 }
 
 void triggerCamera(void)
@@ -99,4 +136,84 @@ void triggerCamera(void)
   digitalWrite(CAMERA_PIN, HIGH);
   delay(500);
   digitalWrite(CAMERA_PIN, LOW);
+}
+
+int buttonValue(int analog) 
+{
+  if (analog >= 768 && analog <= 848) {
+    return 1;
+  } else if (analog >= 573 && analog <= 653) {
+    return 2;
+  } else if (analog >= 373 && analog <= 453) {
+    return 3;
+  } else if (analog >= 177 && analog <= 257) {
+    return 4;
+  } else {
+    return 0;
+  }
+}
+
+
+void passwordInput(int button_value)
+{
+  password_input[count] = button_value;
+  count++;
+  delay(350);
+}
+
+bool arrayCompare(int p[], int p_in[]) 
+{
+  return (p[0] == p_in[0] && p[1] == p_in[1] && p[2] == p_in[2] && p[3] == p_in[3]);
+}
+
+void ledIndication(void) 
+{
+  if (count == 0) {
+    digitalWrite(LED_COUNTER1, LOW);
+    digitalWrite(LED_COUNTER2, LOW);
+    digitalWrite(LED_COUNTER3, LOW);
+    digitalWrite(LED_COUNTER4, LOW);
+  } else if (count == 1){
+    digitalWrite(LED_COUNTER1, HIGH);
+    digitalWrite(LED_COUNTER2, LOW);
+    digitalWrite(LED_COUNTER3, LOW);
+    digitalWrite(LED_COUNTER4, LOW);
+  } else if (count == 2) {
+    digitalWrite(LED_COUNTER1, HIGH);
+    digitalWrite(LED_COUNTER2, HIGH);
+    digitalWrite(LED_COUNTER3, LOW);
+    digitalWrite(LED_COUNTER4, LOW);
+  } else if (count == 3) {
+    digitalWrite(LED_COUNTER1, HIGH);
+    digitalWrite(LED_COUNTER2, HIGH);
+    digitalWrite(LED_COUNTER3, HIGH);
+    digitalWrite(LED_COUNTER4, LOW);
+  } else if (count == 4) {
+    digitalWrite(LED_COUNTER1, HIGH);
+    digitalWrite(LED_COUNTER2, HIGH);
+    digitalWrite(LED_COUNTER3, HIGH);
+    digitalWrite(LED_COUNTER4, HIGH);
+    delay(500);
+  }
+}
+
+void doorOpened(void)
+{
+  door_opened = true;
+}
+
+void turnAlarmOff(void)
+{
+  digitalWrite(BUZZER_PIN, LOW);
+}
+
+void armedLedIndication(void)
+{
+  if (armed) {
+    digitalWrite(LED_ARMED, HIGH);
+    digitalWrite(LED_DISARMED, LOW);
+  } else {
+    digitalWrite(LED_ARMED, LOW);
+    digitalWrite(LED_DISARMED, HIGH);
+  }
 }
