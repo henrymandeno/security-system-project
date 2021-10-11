@@ -41,12 +41,10 @@ void setup()
   pinMode(LED_DISARMED, OUTPUT);
   pinMode(LED_ARMED, OUTPUT);
   pinMode(PINPAD, INPUT_PULLUP);
-//  attachInterrupt(digitalPinToInterrupt(DOOR_PIN), doorOpened, RISING);
 }
 
 void loop() 
 {
-  Serial.println(door_opened);
   if (armed) {
     door_opened = digitalRead(DOOR_PIN);
     if (door_opened) {
@@ -59,8 +57,6 @@ void loop()
         runOnce = false;
       }
     }
-    
-//      triggerCamera();
     
   } else if (!armed) {
     door_opened = false;
@@ -139,13 +135,6 @@ void alarmBuzzer(void)
   
 }
 
-void triggerCamera(void)
-{
-  digitalWrite(CAMERA_PIN, HIGH);
-  delay(500);
-  digitalWrite(CAMERA_PIN, LOW);
-}
-
 int buttonValue(int analog) 
 {
   if (analog >= 768 && analog <= 848) {
@@ -203,11 +192,6 @@ void ledIndication(void)
     digitalWrite(LED_COUNTER4, HIGH);
     delay(500);
   }
-}
-
-void doorOpened(void)
-{
-  door_opened = true;
 }
 
 void turnAlarmOff(void)
